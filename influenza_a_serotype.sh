@@ -4,6 +4,8 @@
 # read stats for preprocessing
 #
 
+source /cmmr/prod/envParams/condanewenv.init && conda activate EsViritu
+
 SAMP=$1
 
 READ1=$2
