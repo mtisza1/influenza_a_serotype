@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "iav_serotype"
+version = "0.1.0"
+authors = [
+  { name="Mike Tisza", email="michael.tisza@gmail.com" },
+]
+description = "Assign Influenza A serotype to short reads."
+readme = "README.md"
+requires-python = ">=3.6"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "numpy",    
+]
+
+
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"iav_serotype" = ["*.R", "*.sh", "*.py"]
+
+[tool.setuptools]
+script-files = ["src/iav_serotype/parse_pafs_influenza_A.R"]
+py-modules=[
+  "iav_serotype",
+  "fastq_process",
+  "grep_reads",
+  "is_tool",
+  "minimap2"
+]
+
+[project.scripts]  
+iav_serotype = "iav_serotype:iav_serotype"
+fastq_process = "iav_serotype:fastq_process"
+grep_reads = "iav_serotype:grep_reads"
+is_tool = "iav_serotype:is_tool"
+minimap2 = "iav_serotype:minimap2"
+
+[project.urls]
+"Homepage" = "https://github.com/mtisza1/influenza_a_serotype"
+"Bug Tracker" = "https://github.com/mtisza1/influenza_a_serotype/issues"
