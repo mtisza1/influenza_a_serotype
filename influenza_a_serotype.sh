@@ -16,7 +16,8 @@ OUT_DIR=$4
 
 SAMP_DIR="${OUT_DIR}/${SAMP}"
 
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+## remember to update this
+SCRIPT_DIR="/gpfs2/projects/mjt_repos/influenza_a_serotype"
 
 
 CPUS=40
