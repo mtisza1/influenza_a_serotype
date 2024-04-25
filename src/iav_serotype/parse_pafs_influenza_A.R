@@ -7,10 +7,11 @@ suppressPackageStartupMessages(library(ggplot2))
 
 args = commandArgs(trailingOnly=TRUE)
 
-if (length(args)!=4) {
-  stop("4 arguments must be supplied \
-       flu info db, paf file, sample name, out directory.", call.=FALSE)
-} else if (length(args)==4) {
+if (length(args)!=5) {
+  stop("5 arguments must be supplied \
+       flu info db, paf file, sample name, \
+       out directory, score threshold.", call.=FALSE)
+} else if (length(args)==5) {
   sprintf("arguments found. Running.")
 }
 
@@ -21,6 +22,8 @@ paf_file <- args[2]
 samp <- args[3]
 
 out_dir <- args[4]
+
+score_thresh <- args[5]
 
 paf_dt <- fread(paf_file, select = 1:12, sep = "\t", header = F, fill = T,
                 col.names = 
@@ -58,8 +61,10 @@ sum_dt <- assigment_dt %>%
   mutate(read_assignment = case_when(
     (max(top_score - 0.003)) >= min(top_score) |
       n_distinct(serotype) == 1 ~ first(serotype),
-    TRUE ~ "ambiguous"
-  )) 
+    TRUE ~ "ambiguous"),
+    read_assignment = case_when(max(top_score) < 
+                                  score_thresh ~ "ambiguous",
+                                TRUE ~ read_assignment))
 
 write.table(sum_dt,
             file = sprintf("%s/%s_read_summary.tsv", 

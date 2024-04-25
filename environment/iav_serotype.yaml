@@ -1,0 +1,16 @@
+name: iav_serotype
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.11.0
+  - minimap2[version='>=2.21']
+  - seqkit
+  - fastp[version='>=0.23.2']
+  - r-scales
+  - r-dplyr
+  - r-data.table
+  - r-base
+  - r-stringr
+  - r-ggplot2
