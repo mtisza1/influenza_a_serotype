@@ -449,7 +449,10 @@ def iav_serotype():
         logger.info(f'no reads assigned to influenza A')
 
     if not args.KEEP == True:
-        subprocess.run(['rm', f'{iavs_temp}/{str(args.SAMPLE)}_*.fastq'])
+        if len(iavs_temp) > 0:
+            for tempfile in os.listdir(iavs_temp):
+                if tempfile.startswith(f'{str(args.SAMPLE)}'):
+                    subprocess.run(['rm', os.path.join(iavs_temp, tempfile)])
 
 
     iavs_endtime = time.perf_counter()

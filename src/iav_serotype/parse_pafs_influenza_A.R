@@ -25,7 +25,8 @@ out_dir <- args[4]
 
 score_thresh <- args[5]
 
-paf_dt <- fread(paf_file, select = 1:12, sep = "\t", header = F, fill = T,
+paf_dt <- fread(paf_file, select = 1:12, sep = "\t", header = F, 
+                fill = T, 
                 col.names = 
                   c("qname", "qlength", "qstart", "qend", "strand",
                     "tname", "tlength", "tstart", "tend", 
