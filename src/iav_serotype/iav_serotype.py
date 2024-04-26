@@ -296,8 +296,9 @@ def iav_serotype():
 
         fastp_starttime = time.perf_counter()
 
-        ready_r1 = decomp_r1.replace('.fastq', '.fastp.fastq')
-        ready_r2 = decomp_r2.replace('.fastq', '.fastp.fastq')
+
+        ready_r1 = f'{iavs_temp}/{str(args.SAMPLE)}_R1.fastp.fastq'
+        ready_r2 = f'{iavs_temp}/{str(args.SAMPLE)}_R2.fastp.fastq'
 
         htmlo = os.path.join(iavs_temp, f'{str(args.SAMPLE)}_fastp.html')
         jsono = os.path.join(iavs_temp, f'{str(args.SAMPLE)}_fastp.json')
@@ -332,7 +333,7 @@ def iav_serotype():
         sys.exit()
 
     if not os.path.isfile(ready_r2) or os.path.getsize(ready_r2) == 0:
-        logger.error(f'before: minimap2, read 3 file empty or does not exist')
+        logger.error(f'before: minimap2, read 2 file empty or does not exist')
         sys.exit()
     
     # seqkit stats
