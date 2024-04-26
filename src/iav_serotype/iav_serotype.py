@@ -17,13 +17,12 @@ from distutils.spawn import find_executable
 ####### ####### ##################### ####### ####### 
 
 # uncompress .bz2 fastqs
-def unbz2_paired(bzread1:str, bzread2: str, deread1: str, deread2: str, cpu: str):
+def unbz2_file(bzread1:str, deread1: str, cpu: str):
 
     return Popen(['lbzcat', '-n', cpu, '-c', bzread1],
-                    stdout=open(deread1, "w"), stderr=STDOUT), \
-            Popen(['lbzcat', '-n', cpu, '-c', bzread2],
-                    stdout=open(deread2, "w"), stderr=STDOUT)
-    
+                    stdout=open(deread1, "w"), stderr=STDOUT)
+
+
 # fastp paired-end
 def fastp_paired(read1:str, read2: str, fastp_read1: str, 
                  fastp_read2: str, cpus: str,
@@ -260,17 +259,27 @@ def iav_serotype():
 
         try:
 
-            unbz2run = unbz2_paired(str(args.READS[0]), str(args.READS[1]), 
-                                   decomp_r1, decomp_r2, 
-                                   str(args.CPU))
+            unbz2run1 = unbz2_file(str(args.READS[0]), 
+                                   decomp_r1, str(args.CPU))
 
-            with unbz2run.stdout:
-                log_subprocess_output(unbz2run.stdout)
-            exitcode = unbz2run.wait()
+            with unbz2run1.stdout:
+                log_subprocess_output(unbz2run1.stdout)
+            exitcode = unbz2run1.wait()
         except Exception as e:
             logger.error(e)
             sys.exit
 
+        try:
+
+            unbz2run2 = unbz2_file(str(args.READS[1]), 
+                                   decomp_r2, str(args.CPU))
+
+            with unbz2run2.stdout:
+                log_subprocess_output(unbz2run2.stdout)
+            exitcode = unbz2run2.wait()
+        except Exception as e:
+            logger.error(e)
+            sys.exit
 
 
         lbzcat_endtime = time.perf_counter()
