@@ -30,20 +30,11 @@ where = ["src"]
 
 [tool.setuptools]
 script-files = ["src/iav_serotype/parse_pafs_influenza_A.R"]
-py-modules=[
-  "iav_serotype",
-  "fastq_process",
-  "grep_reads",
-  "is_tool",
-  "minimap2"
-]
+
 
 [project.scripts]  
 iav_serotype = "iav_serotype:iav_serotype"
-fastq_process = "iav_serotype:fastq_process"
-grep_reads = "iav_serotype:grep_reads"
-is_tool = "iav_serotype:is_tool"
-minimap2 = "iav_serotype:minimap2"
+
 
 [project.urls]
 "Homepage" = "https://github.com/mtisza1/influenza_a_serotype"

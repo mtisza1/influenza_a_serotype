@@ -13,11 +13,66 @@ import re
 import logging
 from distutils.spawn import find_executable
 
-# this tool's modules
-from is_tool import is_tool
-from fastq_process import unbz2_paired, fastp_paired, seqkit_stats_paired
-from minimap2 import minimap2
-from grep_reads import grep_reads
+####### ####### this tool's functions ####### ####### 
+####### ####### ##################### ####### ####### 
+
+# uncompress .bz2 fastqs
+def unbz2_paired(bzread1:str, bzread2: str, deread1: str, deread2: str, cpu: str):
+
+    return Popen(['lbzcat', '-n', cpu, '-c', bzread1, '>', 
+                    deread1],
+                    stdout=PIPE, stderr=STDOUT), \
+            Popen(['lbzcat', '-n', cpu, '-c', bzread2, '>', 
+                    deread2],
+                    stdout=PIPE, stderr=STDOUT)
+    
+# fastp paired-end
+def fastp_paired(read1:str, read2: str, fastp_read1: str, 
+                 fastp_read2: str, cpus: str,
+                 htmlo: str, jsono: str):
+
+    icpus = int(cpus)
+    if icpus > 16:
+        cpus = str(16)
+    
+    return Popen(['fastp', '-w', cpus, 
+                    '-i', read1, '-I', read2, 
+                    '-o', fastp_read1, '-O', fastp_read2,
+                    '-h', htmlo, '-j', jsono],
+                    stdout=PIPE, stderr=STDOUT)
+    
+# seqkit stats
+def seqkit_stats_paired(read1:str, read2: str, cpus: str, stat_file: str):
+
+    return Popen(['seqkit', 'stats', '-j', cpus, '-T',
+                    '-o', stat_file,
+                    read1, read2],
+                    stdout=PIPE, stderr=STDOUT)
+
+# run minimap with correct settings
+def minimap2(reference: str, read1: str, read2: str, paf_file: str, cpus: str):
+
+    return Popen(['minimap2', '-t', cpus, 
+                    '-cx', 'sr', '--secondary=yes', 
+                    '-o', paf_file,
+                    reference, read1, read2],
+                    stdout=PIPE, stderr=STDOUT)
+
+# grep reads of each serotype
+def grep_reads(rname_file: str, reads: str, sero_reads: str, cpus: str):
+    
+    return Popen(['seqkit', 'grep', '-j', cpus,
+                    '-o', sero_reads,
+                    '-f', rname_file, reads],
+                    stdout=PIPE, stderr=STDOUT)
+
+def is_tool(name):
+    """Check whether `name` is on PATH."""
+    from distutils.spawn import find_executable
+    return find_executable(name) is not None
+
+####### ####### ##################### ####### ####### 
+####### ####### ##################### ####### ####### 
 
 
 def str2bool(v):
@@ -54,13 +109,15 @@ def iav_serotype():
 
     required_args.add_argument("-r", "--reads", nargs="+",
                             dest="READS", required=True, 
-                            help='read file(s) in .fastq format. You can specify more than one separated by a space')
+                            help='read file(s) in .fastq format. May be compressed in .bz2 format. \
+                                Specify 2 files of paired end reads.')
     required_args.add_argument("-s", "--sample", 
                             dest="SAMPLE", type=str, required=True, 
                             help='Sample name. No space characters, please.')
     required_args.add_argument("-o", "--output_dir", 
                             dest="OUTPUT_DIR", type=str, required=True, 
-                            help='Output directory name. Will be created if it does not exist. Can be shared with other samples. No space characters, please. ')
+                            help='Output directory name. Will be created if it does not exist. \
+                                Can be shared with other samples. No space characters, please. ')
 
 
     optional_args = parser.add_argument_group(' OPTIONAL ARGUMENTS for iav_serotype.')
@@ -74,10 +131,6 @@ def iav_serotype():
                                 run directory will be created within.")
     optional_args.add_argument('-q', "--qual", dest="QUAL", type=str2bool, default='True',
                             help='True or False. Remove low-quality reads with fastp?')
-    optional_args.add_argument('-f', "--filter_seqs", dest="FILTER_SEQS", type=str2bool, default='False',
-                            help='True or False. Remove reads aligning to sequences at filter_seqs/filter_seqs.fna ?')
-
-
     optional_args.add_argument("--temp", 
                             dest="TEMP_DIR", type=str, default='default',
                             help='path of temporary directory. Default is {OUTPUT_DIR}/{SAMPLE}_temp/')
