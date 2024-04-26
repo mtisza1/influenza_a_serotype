@@ -19,12 +19,10 @@ from distutils.spawn import find_executable
 # uncompress .bz2 fastqs
 def unbz2_paired(bzread1:str, bzread2: str, deread1: str, deread2: str, cpu: str):
 
-    return Popen(['lbzcat', '-n', cpu, '-c', bzread1, '>', 
-                    deread1],
-                    stdout=PIPE, stderr=STDOUT), \
-            Popen(['lbzcat', '-n', cpu, '-c', bzread2, '>', 
-                    deread2],
-                    stdout=PIPE, stderr=STDOUT)
+    return Popen(['lbzcat', '-n', cpu, '-c', bzread1],
+                    stdout=open(deread1, "w"), stderr=STDOUT), \
+            Popen(['lbzcat', '-n', cpu, '-c', bzread2],
+                    stdout=open(deread2, "w"), stderr=STDOUT)
     
 # fastp paired-end
 def fastp_paired(read1:str, read2: str, fastp_read1: str, 
