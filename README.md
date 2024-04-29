@@ -25,13 +25,23 @@
 
 # Run `iav_serotype`
 
-Right now, requirement is 1 set of paired-end reads per run. These can be compressed in .bz2 format.
+Right now, requirement is 1 set of paired-end reads per run. The reads must be decompressed with the `.fastq` extension.
 
 example:
 
 `iav_serotype -r my_reads/virome.R1.fastq my_reads/virome.R2.fastq -s my_virome_iav -o iav_project --db iav_DB`
 
 # Database notes
+
+## v1.1
+
+Added sequences and metadata rows to `v1.0`, searches on April 26, 2024:
+
+1) FluDB query Influenza A "complete", collection date(06-01-2022 - 05-31-2023)
+
+2) NCBI virus taxid=2955291, length filter( 3000 > 700 ), collection date(06-01-2023 - 04-26-2024)
+
+Then, sequences and metadata were parsed to remove any duplicate accessions.
 
 ## v1.0
 using NCBI datasets command line tool, (April 23, 2024), this is how I downloaded Influenza A assmeblies:
