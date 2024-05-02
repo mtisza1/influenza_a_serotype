@@ -38,7 +38,7 @@ def fastp_paired(read1:str, read2: str, fastp_read1: str,
                     '-h', htmlo, '-j', jsono],
                     stdout=PIPE, stderr=STDOUT)
     
-# seqkit stats
+# seqkit stats paired short reads
 def seqkit_stats_paired(read1:str, read2: str, cpus: str, stat_file: str):
 
     return Popen(['seqkit', 'stats', '-j', cpus, '-T',
@@ -46,13 +46,32 @@ def seqkit_stats_paired(read1:str, read2: str, cpus: str, stat_file: str):
                     read1, read2],
                     stdout=PIPE, stderr=STDOUT)
 
+# seqkit stats all
+def seqkit_stats_long(reads: str, cpus: str, stat_file: str):
+
+    return Popen(['seqkit', 'stats', '-j', cpus, '-T',
+                    '-o', stat_file,
+                    reads],
+                    stdout=PIPE, stderr=STDOUT)
+
 # run minimap with correct settings
-def minimap2(reference: str, read1: str, read2: str, paf_file: str, cpus: str):
+##should be for paired short reads
+def minimap2_sr(reference: str, read1: str, read2: str, paf_file: str, cpus: str):
 
     return Popen(['minimap2', '-t', cpus, 
                     '-cx', 'sr', '--secondary=yes', 
                     '-o', paf_file,
                     reference, read1, read2],
+                    stdout=PIPE, stderr=STDOUT)
+
+# run minimap with long read correct settings
+##should be for paired short reads
+def minimap2_long(reference: str, reads: str, map_set, paf_file: str, cpus: str):
+
+    return Popen(['minimap2', '-t', cpus, 
+                    '-cx', map_set, '--secondary=yes', 
+                    '-o', paf_file,
+                    reference, reads],
                     stdout=PIPE, stderr=STDOUT)
 
 # grep reads of each serotype
@@ -92,7 +111,7 @@ def iav_serotype():
 
     parentpath = Path(pathname).parents[1]
 
-    __version__ = "0.1.0"
+    __version__ = "0.1.1"
 
     Def_CPUs = os.cpu_count()
 
@@ -106,8 +125,8 @@ def iav_serotype():
 
     required_args.add_argument("-r", "--reads", nargs="+",
                             dest="READS", required=True, 
-                            help='read file(s) in .fastq format. May be compressed in .bz2 format. \
-                                Specify 2 files of paired end reads.')
+                            help='read file(s) in .fastq format, uncompressed. \
+                                Specify 2 files of paired end short reads OR one or more long read files')
     required_args.add_argument("-s", "--sample", 
                             dest="SAMPLE", type=str, required=True, 
                             help='Sample name. No space characters, please.')
@@ -136,7 +155,7 @@ def iav_serotype():
                             help='True of False. Keep the intermediate files, located in the temporary directory? \
                                 These can add up, so it is not recommended if space is a concern.')
     optional_args.add_argument("-p", "--read_format", 
-                            dest="READ_FMT", type=str, default='paired',
+                            dest="READ_FMT", type=str, choices=['short_paired', 'long'], default='short_paired',
                             help='ONLY SUPPORTING PAIRED RIGHT NOW. Must be 2 files.')
 
     optional_args.add_argument("--db", 
@@ -149,6 +168,10 @@ def iav_serotype():
                             dest="THRESH", type=int, default=0.9,
                             help=f'Default = 0.9 -- minimum read score for serotype assignment (ANI*AF). \
                                 Maximum possible score = 1')
+    #MM_SET
+    optional_args.add_argument("--mm_preset", 
+                            dest="MM_SET", type=str, choices=['map-pb', 'map-ont', 'map-hifi', 'lr:hq'], default='lr:hq',
+                            help=f'Default = lr:hq -- minimap2 alignemnt preset (for long read data only)')
     args = parser.parse_args()
 
     ## make directories
@@ -187,11 +210,13 @@ def iav_serotype():
     READS = ' '.join(map(str,args.READS))
 
 
-    if len(READS.split()) == 2 and str(args.READ_FMT).lower() == "paired":
-        logger.info(f'{len(READS.split())} {str(args.READ_FMT).lower()} read files')
-    elif len(READS.split()) != 2 and str(args.READ_FMT).lower() == "paired":
-        logger.info("if stating --read_format paired, must provide exactly 2 read files. exiting.")
+    if len(READS.split()) == 2 and str(args.READ_FMT).lower() == "short_paired":
+        logger.info(f'{len(READS.split())} {str(args.READ_FMT).lower()} short read files')
+    elif len(READS.split()) != 2 and str(args.READ_FMT).lower() == "short_paired":
+        logger.info("if stating --read_format short_paired, must provide exactly 2 read files. exiting.")
         sys.exit()
+    elif str(args.READ_FMT).lower() == "long":
+        logger.info(f'{len(READS.split())} {str(args.READ_FMT).lower()} long read files')
 
     if args.DB == "default" and os.getenv('IAVS_DB') != None:
         args.DB = os.getenv('IAVS_DB')
@@ -205,18 +230,21 @@ def iav_serotype():
         sys.exit()
 
 
-    print("DB: ", str(args.DB))
+    logger.info("DB: ", str(args.DB))
 
-    print("version ", str(__version__))
+    logger.info("version ", str(__version__))
+
+    logger.info("read format ", str(args.READ_FMT))
+
 
     completedProc = subprocess.run(['Rscript', str(iavs_script_path) + '/check_R_libraries1.R'])
 
-    print(completedProc.returncode)
+    #print(completedProc.returncode)
     if completedProc.returncode != 0 :
-        print ("some required R packages are not found. Required:")
-        print ("dplyr, data.table, stringr, ggplot2")
-        print ("Did you activate the conda environment?")
-        print ("see yml. Exiting")
+        logger.warning("some required R packages are not found. Required:")
+        logger.warning("dplyr, data.table, stringr, ggplot2")
+        logger.warning("Did you activate the conda environment?")
+        logger.warning("see yml. Exiting")
         quit()
 
 
@@ -236,18 +264,24 @@ def iav_serotype():
 
     ### Actually do stuff
 
-    if not os.path.isfile(str(args.READS[0])) or os.path.getsize(str(args.READS[0])) == 0:
-        logger.error(f'before: fastq processing, read 1 file empty or does not exist')
-        sys.exit()
+    if str(args.READ_FMT).lower() == "short_paired":
+        if not os.path.isfile(str(args.READS[0])) or os.path.getsize(str(args.READS[0])) == 0:
+            logger.error(f'before: fastq processing, read 1 file empty or does not exist')
+            sys.exit()
 
-    if not os.path.isfile(str(args.READS[1])) or os.path.getsize(str(args.READS[1])) == 0:
-        logger.error(f'before: fastq processing, read 2 file empty or does not exist')
-        sys.exit()
+        if not os.path.isfile(str(args.READS[1])) or os.path.getsize(str(args.READS[1])) == 0:
+            logger.error(f'before: fastq processing, read 2 file empty or does not exist')
+            sys.exit()
+    elif str(args.READ_FMT).lower() == "long":
+        for readf in READS:
+            if not os.path.isfile(str(readf)) or os.path.getsize(str(readf)) == 0:
+                logger.error(f'before: fastq processing, read file {readf} is empty or does not exist')
     
     bz2 = False
-    for read in args.READS:
-        if read.endswith('bz2'):
-            bz2 = True
+    ### not developing this option right now.
+    #for read in args.READS:
+    #    if read.endswith('bz2'):
+    #        bz2 = True
     
     if bz2 == True:
         lbzcat_starttime = time.perf_counter()
@@ -287,114 +321,156 @@ def iav_serotype():
         time_taken = lbzcat_endtime - lbzcat_starttime
 
         logger.info(f"> lbzcat took {timedelta(seconds=time_taken)}")
-    else:
-        decomp_r1 = str(args.READS[0])
-        decomp_r2 = str(args.READS[1])
 
-    if not os.path.isfile(decomp_r1) or os.path.getsize(decomp_r1) == 0:
-        logger.error(f'before: fastq quality, read 1 file empty or does not exist')
-        sys.exit()
+    stat_file = f'{samp_out_dir}/{str(args.SAMPLE)}_read_stats.tsv'
 
-    if not os.path.isfile(decomp_r2) or os.path.getsize(decomp_r2) == 0:
-        logger.error(f'before: fastq quality, read 2 file empty or does not exist')
-        sys.exit()
+    paf_file = f'{samp_out_dir}/{str(args.SAMPLE)}_influenza_A.cigar.paf'
 
-    if args.QUAL == True:
+    if str(args.READ_FMT).lower() == "short_paired": #######
+        if args.QUAL == True:
 
-        fastp_starttime = time.perf_counter()
+            fastp_starttime = time.perf_counter()
 
 
-        ready_r1 = f'{iavs_temp}/{str(args.SAMPLE)}_R1.fastp.fastq'
-        ready_r2 = f'{iavs_temp}/{str(args.SAMPLE)}_R2.fastp.fastq'
+            ready_r1 = f'{iavs_temp}/{str(args.SAMPLE)}_R1.fastp.fastq'
+            ready_r2 = f'{iavs_temp}/{str(args.SAMPLE)}_R2.fastp.fastq'
 
-        htmlo = os.path.join(iavs_temp, f'{str(args.SAMPLE)}_fastp.html')
-        jsono = os.path.join(iavs_temp, f'{str(args.SAMPLE)}_fastp.json')
+            htmlo = os.path.join(iavs_temp, f'{str(args.SAMPLE)}_fastp.html')
+            jsono = os.path.join(iavs_temp, f'{str(args.SAMPLE)}_fastp.json')
 
-        logger.info(f'running fastp to QC reads')
+            logger.info(f'running fastp to QC reads')
+            try:
+                fastprun = fastp_paired(str(args.READS[0]), str(args.READS[1]), 
+                                        ready_r1, ready_r2, 
+                                        str(args.CPU),
+                                        htmlo, jsono)
+
+                with fastprun.stdout:
+                    log_subprocess_output(fastprun.stdout)
+                exitcode = fastprun.wait()
+
+                
+            except Exception as e:
+                logger.error(e)
+                sys.exit
+
+            fastp_endtime = time.perf_counter()
+
+            time_taken = fastp_endtime - fastp_starttime
+
+            logger.info(f"> fastp took {timedelta(seconds=time_taken)}")
+        else:
+            ready_r1 = decomp_r1
+            ready_r2 = decomp_r2
+    
+        if not os.path.isfile(ready_r1) or os.path.getsize(ready_r1) == 0:
+            logger.error(f'before: minimap2, read 1 file empty or does not exist')
+            sys.exit()
+
+        if not os.path.isfile(ready_r2) or os.path.getsize(ready_r2) == 0:
+            logger.error(f'before: minimap2, read 2 file empty or does not exist')
+            sys.exit()
+    
+        # seqkit stats
+
+        seqkit_starttime = time.perf_counter()
+
+        logger.info(f'running seqkit stats on reads')
         try:
-            fastprun = fastp_paired(decomp_r1, decomp_r2, 
-                                    ready_r1, ready_r2, 
-                                    str(args.CPU),
-                                    htmlo, jsono)
 
-            with fastprun.stdout:
-                log_subprocess_output(fastprun.stdout)
-            exitcode = fastprun.wait()
+            seqkitrun = seqkit_stats_paired(ready_r1, ready_r2, str(args.CPU), stat_file)
 
+            with seqkitrun.stdout:
+                log_subprocess_output(seqkitrun.stdout)
+            exitcode = seqkitrun.wait()
             
         except Exception as e:
             logger.error(e)
             sys.exit
 
-        fastp_endtime = time.perf_counter()
+        seqkit_endtime = time.perf_counter()
 
-        time_taken = fastp_endtime - fastp_starttime
+        time_taken = seqkit_endtime - seqkit_starttime
 
-        logger.info(f"> fastp took {timedelta(seconds=time_taken)}")
-    else:
-        ready_r1 = decomp_r1
-        ready_r2 = decomp_r2
-    
-    if not os.path.isfile(ready_r1) or os.path.getsize(ready_r1) == 0:
-        logger.error(f'before: minimap2, read 1 file empty or does not exist')
-        sys.exit()
+        logger.info(f"> seqkit stats took {timedelta(seconds=time_taken)}")
 
-    if not os.path.isfile(ready_r2) or os.path.getsize(ready_r2) == 0:
-        logger.error(f'before: minimap2, read 2 file empty or does not exist')
-        sys.exit()
-    
-    # seqkit stats
-    #f'{outdir}/{samp}/{samp}_read_stats.tsv'
+        # minimap
 
-    seqkit_starttime = time.perf_counter()
-
-    stat_file = f'{samp_out_dir}/{str(args.SAMPLE)}_read_stats.tsv'
-
-    logger.info(f'running seqkit stats on reads')
-    try:
-
-        seqkitrun = seqkit_stats_paired(ready_r1, ready_r2, str(args.CPU), stat_file)
-
-        with seqkitrun.stdout:
-            log_subprocess_output(seqkitrun.stdout)
-        exitcode = seqkitrun.wait()
-        
-    except Exception as e:
-        logger.error(e)
-        sys.exit
-
-    seqkit_endtime = time.perf_counter()
-
-    time_taken = seqkit_endtime - seqkit_starttime
-
-    logger.info(f"> seqkit stats took {timedelta(seconds=time_taken)}")
-
-    # minimap
-
-    mm_starttime = time.perf_counter()
-
-    paf_file = f'{samp_out_dir}/{str(args.SAMPLE)}_influenza_A.cigar.paf'
-
-    logger.info(f'running minimap2 to align reads to influenza A reference sequences')
-    try:
-
-        minimaprun = minimap2(DB_file, ready_r1, ready_r2, paf_file, str(args.CPU))
-
-        with minimaprun.stdout:
-            log_subprocess_output(minimaprun.stdout)
-        exitcode = minimaprun.wait()
-    except Exception as e:
-        logger.error(e)
-        sys.exit
-
-    mm_endtime = time.perf_counter()
-
-    time_taken = mm_endtime - mm_starttime
-
-    logger.info(f"> minimap2 took {timedelta(seconds=time_taken)}")
+        mm_starttime = time.perf_counter()
 
 
-    ### run the R script for parsing and assignment
+        logger.info(f'running minimap2 to align reads to influenza A reference sequences')
+        try:
+
+            minimaprun = minimap2_sr(DB_file, ready_r1, ready_r2, paf_file, str(args.CPU))
+
+            with minimaprun.stdout:
+                log_subprocess_output(minimaprun.stdout)
+            exitcode = minimaprun.wait()
+        except Exception as e:
+            logger.error(e)
+            sys.exit
+
+        mm_endtime = time.perf_counter()
+
+        time_taken = mm_endtime - mm_starttime
+
+        logger.info(f"> minimap2 took {timedelta(seconds=time_taken)}")
+
+
+    ### long reads option ###
+
+    elif str(args.READ_FMT).lower() == "long":
+        # seqkit stats
+
+        seqkit_starttime = time.perf_counter()
+
+        logger.info(f'running seqkit stats on reads')
+        try:
+
+            seqkitrun = seqkit_stats_long(str(READS), str(args.CPU), stat_file)
+
+            with seqkitrun.stdout:
+                log_subprocess_output(seqkitrun.stdout)
+            exitcode = seqkitrun.wait()
+            
+        except Exception as e:
+            logger.error(e)
+            sys.exit
+
+        seqkit_endtime = time.perf_counter()
+
+        time_taken = seqkit_endtime - seqkit_starttime
+
+        logger.info(f"> seqkit stats took {timedelta(seconds=time_taken)}")
+
+        # minimap
+
+        mm_starttime = time.perf_counter()
+
+
+        logger.info(f'running minimap2 to align reads to influenza A reference sequences')
+        try:
+
+            minimaprun = minimap2_long(DB_file, str(READS), str(args.MM_SET), paf_file, str(args.CPU))
+
+            with minimaprun.stdout:
+                log_subprocess_output(minimaprun.stdout)
+            exitcode = minimaprun.wait()
+        except Exception as e:
+            logger.error(e)
+            sys.exit
+
+        mm_endtime = time.perf_counter()
+
+        time_taken = mm_endtime - mm_starttime
+
+        logger.info(f"> minimap2 took {timedelta(seconds=time_taken)}")
+
+
+
+
+    ### run the R script for parsing and assignment ###
     Rprocess = Popen(['Rscript', 
                      str(f'{iavs_script_path}/parse_pafs_influenza_A.R'), 
                      str(f'{args.DB}/Influenza_A_segment_info1.tsv'), 
@@ -425,28 +501,44 @@ def iav_serotype():
         logger.info('getting reads for each serotype assignment')
 
         for serotype_r in assigned_read_list:
-            sero_reads1 = serotype_r.replace('.txt', '.R1.fastq')
-            sero_reads2 = serotype_r.replace('.txt', '.R2.fastq')
 
-            try:
-                #read R1
-                grep1run = grep_reads(serotype_r, ready_r1, sero_reads1, str(args.CPU))
-
-                with grep1run.stdout:
-                    log_subprocess_output(grep1run.stdout)
-                exitcode = grep1run.wait()
-
-                 #read R2
-                grep2run = grep_reads(serotype_r, ready_r2, sero_reads2, str(args.CPU))
-
-                with grep2run.stdout:
-                    log_subprocess_output(grep2run.stdout)
-                exitcode = grep2run.wait()
-
-
-            except Exception as e:
-                logger.error(e)
+            ### grep short reads
+            if str(args.READ_FMT).lower() == "short_paired":
             
+                sero_reads1 = serotype_r.replace('.txt', '.R1.fastq')
+                sero_reads2 = serotype_r.replace('.txt', '.R2.fastq')
+
+                try:
+                    #read R1
+                    grep1run = grep_reads(serotype_r, ready_r1, sero_reads1, str(args.CPU))
+
+                    with grep1run.stdout:
+                        log_subprocess_output(grep1run.stdout)
+                    exitcode = grep1run.wait()
+
+                    #read R2
+                    grep2run = grep_reads(serotype_r, ready_r2, sero_reads2, str(args.CPU))
+
+                    with grep2run.stdout:
+                        log_subprocess_output(grep2run.stdout)
+                    exitcode = grep2run.wait()
+
+
+                except Exception as e:
+                    logger.error(e)
+
+            ### grep long reads
+            elif str(args.READ_FMT).lower() == "long":
+                sero_reads = serotype_r.replace('.txt', '.fastq')
+                try:
+                    greplongrun = grep_reads(serotype_r, str(READS), sero_reads, str(args.CPU))
+
+                    with greplongrun.stdout:
+                        log_subprocess_output(greplongrun.stdout)
+                    exitcode = greplongrun.wait()
+                except Exception as e:
+                    logger.error(e)
+
         grep_endtime = time.perf_counter()
 
         time_taken = grep_endtime - grep_starttime
