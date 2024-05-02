@@ -230,11 +230,11 @@ def iav_serotype():
         sys.exit()
 
 
-    logger.info("DB: ", str(args.DB))
+    logger.info(f"DB: {str(args.DB)}")
 
-    logger.info("version ", str(__version__))
+    logger.info(f"version:  {str(__version__)}")
 
-    logger.info("read format ", str(args.READ_FMT))
+    logger.info(f"read format : {str(args.READ_FMT)}")
 
 
     completedProc = subprocess.run(['Rscript', str(iavs_script_path) + '/check_R_libraries1.R'])
@@ -273,7 +273,7 @@ def iav_serotype():
             logger.error(f'before: fastq processing, read 2 file empty or does not exist')
             sys.exit()
     elif str(args.READ_FMT).lower() == "long":
-        for readf in READS:
+        for readf in args.READS:
             if not os.path.isfile(str(readf)) or os.path.getsize(str(readf)) == 0:
                 logger.error(f'before: fastq processing, read file {readf} is empty or does not exist')
     
