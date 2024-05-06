@@ -1,5 +1,5 @@
 # influenza_a_serotype
- Assign reads from a short-read sequencing library to influenza A serotypes with `iav_serotype` command line tool.
+ Assign reads from a short- or long-read sequencing library to influenza A serotypes with `iav_serotype` command line tool.
 
 
  The basic premise is to competitively align reads to an up-to-date database of influenza A sequences tagged with information about segment and serotype. Then, determined if a read (pair) aligns better to a particular serotype.
