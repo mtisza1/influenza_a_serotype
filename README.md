@@ -42,13 +42,13 @@ You should now have these 2 files:
 
 Right now, requirement is either 1 set of paired-end short reads per run, or 1 or more long read files. Any and all reads must be decompressed with the `.fastq` extension.
 
-example:
+## examples:
 
 short paired-end reads:
 
 `iav_serotype -r my_reads/virome.R1.fastq my_reads/virome.R2.fastq -s my_virome_iav -o iav_project --db /path/to/DBs/v1.1`
 
-short paired-end reads:
+long reads:
 
 `iav_serotype -r long_reads/virome1.fastq long_reads/virome2.fastq long_reads/virome3.fastq -s my_lr_virome_iav -o iav_project --db /path/to/DBs/v1.1`
 
@@ -77,3 +77,9 @@ After unzipping the downloaded directory I used the following script to process 
 
 Note: I'm working on getting a more complete database, as I think there is relevant diversity not included here.
 
+
+# Future updates
+
+1) Update database to have comprehensive influenza A coverage.
+
+2) Add Influenza B, C, and D
