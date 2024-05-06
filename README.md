@@ -1,5 +1,13 @@
 # influenza_a_serotype
- Assign reads from a short-read sequencing library to influenza A serotypes
+ Assign reads from a short-read sequencing library to influenza A serotypes with `iav_serotype` command line tool.
+
+
+ The basic premise is to competitively align reads to an up-to-date database of influenza A sequences tagged with information about segment and serotype. Then, determined if a read (pair) aligns better to a particular serotype.
+
+`Input`: paired-end short reads - OR - long reads
+
+`Output`: 1. files of serotype-specific reads. 2. Read summary table. 3. Plot of serotype distribution in sample
+ 
 
 # Installation
 
@@ -13,23 +21,36 @@
 
 `conda activate iav_serotype`
 
-4) Get databse files from MJT (~115 MB total). Put them in the same directory.
+4) Download and unpack database files from Zenodo (~115 MB total). `cd` to the directory you want them to live.
 
-`Influenza_A_segment_info1.tsv`
+`wget https://zenodo.org/records/11123391/files/Influenza_A_segment_sequences.tar.gz`
 
-`Influenza_A_segment_sequences.fna`
+`tar -xvf Influenza_A_segment_sequences.tar.gz`
+
+
+You should now have these 2 files:
+
+`DBs/v1.1/Influenza_A_segment_info1.tsv`
+
+`DBs/v1.1/Influenza_A_segment_sequences.fna`
 
 5) (optional) set database as conda environmental variable
 
-`conda env config vars set IAVS_DB=/path/to/iav_DB`
+`conda env config vars set IAVS_DB=/path/to/DBs/v1.1`
 
 # Run `iav_serotype`
 
-Right now, requirement is 1 set of paired-end reads per run. The reads must be decompressed with the `.fastq` extension.
+Right now, requirement is either 1 set of paired-end short reads per run, or 1 or more long read files. Any and all reads must be decompressed with the `.fastq` extension.
 
 example:
 
-`iav_serotype -r my_reads/virome.R1.fastq my_reads/virome.R2.fastq -s my_virome_iav -o iav_project --db iav_DB`
+short paired-end reads:
+
+`iav_serotype -r my_reads/virome.R1.fastq my_reads/virome.R2.fastq -s my_virome_iav -o iav_project --db /path/to/DBs/v1.1`
+
+short paired-end reads:
+
+`iav_serotype -r long_reads/virome1.fastq long_reads/virome2.fastq long_reads/virome3.fastq -s my_lr_virome_iav -o iav_project --db /path/to/DBs/v1.1`
 
 # Database notes
 
