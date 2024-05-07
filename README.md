@@ -21,7 +21,15 @@
 
 `conda activate iav_serotype`
 
-4) Download and unpack database files from Zenodo (~115 MB total). `cd` to the directory you want them to live.
+4) Use `pip` to install command line tool.
+
+`cd influenza_a_serotype`
+
+`pip install .`
+
+(you should now be able to call `iav_serotype` from the command line to bring up the help menu)
+
+5) Download and unpack database files from Zenodo (~115 MB total). `cd` to the directory you want them to live.
 
 `wget https://zenodo.org/records/11123391/files/Influenza_A_segment_sequences.tar.gz`
 
@@ -34,7 +42,7 @@ You should now have these 2 files:
 
 `DBs/v1.1/Influenza_A_segment_sequences.fna`
 
-5) (optional) set database as conda environmental variable
+6) (optional) set database as conda environmental variable
 
 `conda env config vars set IAVS_DB=/path/to/DBs/v1.1`
 
