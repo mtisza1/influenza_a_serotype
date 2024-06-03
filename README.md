@@ -64,6 +64,8 @@ long reads:
 
 ## v1.1
 
+NOTE: it was pointed out to me that several sequences with uninformative serotype labels were included in both version of the database, e.g. "H3", "mixed", "HxNx". Since these poorly-labeled sequences only represent ~1,600/~210,000 sequences in `v1.1`, performance should not be substantially effected, but these will be removed in future releases.
+
 Added sequences and metadata rows to `v1.0`, searches on April 26, 2024:
 
 1) FluDB query Influenza A "complete", collection date(06-01-2022 - 05-31-2023)
