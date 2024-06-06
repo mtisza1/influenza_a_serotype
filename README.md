@@ -81,7 +81,7 @@ long reads:
 
 ## v1.25
 
-NOTE: Use database `v1.25` with `iav_serotype v0.1.2` or later. a small number of added reference sequences have short sequences that were likely assembled into the genome by mistake. These will cause assignment of reads as "ambiguous" IAV in `iav_serotype v0.1.1`, but these alignments are filtered out in `iav_serotype v0.1.2`. Thank you.
+NOTE: Use database `v1.25` with `iav_serotype v0.1.2` or later. A small number of added reference sequences have short sequences that were likely assembled into the genome by mistake. These will cause assignment of non-specific reads as "ambiguous" IAV in `iav_serotype v0.1.1`, but these alignments are filtered out in `iav_serotype v0.1.2`. Thank you.
 
 Description:
 
