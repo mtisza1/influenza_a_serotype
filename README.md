@@ -29,22 +29,39 @@
 
 (you should now be able to call `iav_serotype` from the command line to bring up the help menu)
 
-5) Download and unpack database files from Zenodo (~115 MB total). `cd` to the directory you want them to live.
+5) Download and unpack database files from Zenodo (~1.7 GB total). `cd` to the directory you want them to live.
 
-`wget https://zenodo.org/records/11123391/files/Influenza_A_segment_sequences.tar.gz`
+`wget https://zenodo.org/records/11509609/files/Influenza_A_segment_sequences.tar.gz`
 
 `tar -xvf Influenza_A_segment_sequences.tar.gz`
 
 
 You should now have these 2 files:
 
-`DBs/v1.1/Influenza_A_segment_info1.tsv`
+`DBs/v1.25/Influenza_A_segment_info1.tsv`
 
-`DBs/v1.1/Influenza_A_segment_sequences.fna`
+`DBs/v1.25/Influenza_A_segment_sequences.fna`
 
 6) (optional) set database as conda environmental variable
 
-`conda env config vars set IAVS_DB=/path/to/DBs/v1.1`
+`conda env config vars set IAVS_DB=/path/to/DBs/v1.25`
+
+
+# Update (if necessary)
+
+Latest version is `v0.1.2`
+
+
+1) `pip uninstall iav_serotype`
+
+2) `cd influenza_a_serotype`
+
+3) `git pull`
+
+4) `pip install .`
+
+5) `iav_serotype --version`
+
 
 # Run `iav_serotype`
 
@@ -54,13 +71,29 @@ Right now, requirement is either 1 set of paired-end short reads per run, or 1 o
 
 short paired-end reads:
 
-`iav_serotype -r my_reads/virome.R1.fastq my_reads/virome.R2.fastq -s my_virome_iav -o iav_project --db /path/to/DBs/v1.1`
+`iav_serotype -r my_reads/virome.R1.fastq my_reads/virome.R2.fastq -s my_virome_iav -o iav_project --db /path/to/DBs/v1.25`
 
 long reads:
 
-`iav_serotype -r long_reads/virome1.fastq long_reads/virome2.fastq long_reads/virome3.fastq -s my_lr_virome_iav -o iav_project --db /path/to/DBs/v1.1`
+`iav_serotype -r long_reads/virome1.fastq long_reads/virome2.fastq long_reads/virome3.fastq -s my_lr_virome_iav -o iav_project --db /path/to/DBs/v1.25`
 
 # Database notes
+
+## v1.25
+
+NOTE: Use database `v1.25` with `iav_serotype v0.1.2` or later. a small number of added reference sequences have short sequences that were likely assembled into the genome by mistake. These will cause assignment of reads as "ambiguous" IAV in `iav_serotype v0.1.1`, but these alignments are filtered out in `iav_serotype v0.1.2`. Thank you.
+
+Description:
+
+Fresh download of all complete influenza A sequences + metadata tables from NCBI virus. Consists of 981,537 complete segements.
+
+1) Search and download date=2024-06-05, NCBI virus taxid=2955291, length filter( 3000 > 700 )
+
+2) Then, sequences and metadata were parsed to remove any duplicate accessions and any sequences with uninformative serotype labels, e.g. "H3", "mixed", "HxNx".
+
+3) Finally, low complexity regions were masked with `bbmask.sh` with default parameters for low-complexity filtering (available with `bbtools`)
+
+[Zenodo](https://zenodo.org/records/11509609)
 
 ## v1.1
 
@@ -90,6 +123,4 @@ Note: I'm working on getting a more complete database, as I think there is relev
 
 # Future updates
 
-1) Update database to have comprehensive influenza A coverage.
-
-2) Add Influenza B, C, and D
+1) Add Influenza B, C, and D
