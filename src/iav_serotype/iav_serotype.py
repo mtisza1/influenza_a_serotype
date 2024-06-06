@@ -111,7 +111,7 @@ def iav_serotype():
 
     parentpath = Path(pathname).parents[1]
 
-    __version__ = "0.1.1"
+    __version__ = "0.1.2"
 
     Def_CPUs = os.cpu_count()
 
@@ -156,7 +156,7 @@ def iav_serotype():
                                 These can add up, so it is not recommended if space is a concern.')
     optional_args.add_argument("-p", "--read_format", 
                             dest="READ_FMT", type=str, choices=['short_paired', 'long'], default='short_paired',
-                            help='ONLY SUPPORTING PAIRED RIGHT NOW. Must be 2 files.')
+                            help='default = short_paired. short_paired must provide 2 .fastq files.')
 
     optional_args.add_argument("--db", 
                             dest="DB", type=str, default='default',
