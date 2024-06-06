@@ -62,10 +62,8 @@ sum_dt <- assigment_dt %>%
   mutate(read_assignment = case_when(
     (max(top_score - 0.003)) >= min(top_score) |
       n_distinct(serotype) == 1 ~ first(serotype),
-    TRUE ~ "ambiguous"),
-    read_assignment = case_when(max(top_score) < 
-                                  score_thresh ~ "ambiguous",
-                                TRUE ~ read_assignment))
+    TRUE ~ "ambiguous")) %>%
+  filter(max(top_score) >= score_thresh)
 
 write.table(sum_dt,
             file = sprintf("%s/%s_read_summary.tsv", 
