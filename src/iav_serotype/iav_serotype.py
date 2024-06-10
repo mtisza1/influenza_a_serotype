@@ -60,12 +60,13 @@ def minimap2_sr(reference: str, read1: str, read2: str, paf_file: str, cpus: str
 
     return Popen(['minimap2', '-t', cpus, 
                     '-cx', 'sr', '--secondary=yes', 
+                    '-f', '100000',
                     '-o', paf_file,
                     reference, read1, read2],
                     stdout=PIPE, stderr=STDOUT)
 
 # run minimap with long read correct settings
-##should be for paired short reads
+##should be for long reads
 def minimap2_long(reference: str, reads: str, map_set, paf_file: str, cpus: str):
 
     return Popen(['minimap2', '-t', cpus, 

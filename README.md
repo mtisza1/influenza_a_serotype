@@ -49,7 +49,7 @@ You should now have these 2 files:
 
 # Update (if necessary)
 
-Latest version is `v0.1.2`
+Latest version is `v0.1.3`
 
 
 1) `pip uninstall iav_serotype`
@@ -81,7 +81,7 @@ long reads:
 
 ## v1.25
 
-NOTE: Use database `v1.25` with `iav_serotype v0.1.2` or later. A small number of added reference sequences have short sequences that were likely assembled into the genome by mistake. These will cause assignment of non-specific reads as "ambiguous" IAV in `iav_serotype v0.1.1`, but these alignments are filtered out in `iav_serotype v0.1.2`. Thank you.
+NOTE: Use database `v1.25` with `iav_serotype v0.1.3` or later. A small number of added reference sequences have short sequences that were likely assembled into the genome by mistake. These will cause assignment of non-specific reads as "ambiguous" IAV in `iav_serotype v0.1.1`, but these alignments are filtered out starting in `iav_serotype v0.1.2`. Further, in `iav_serotype v0.1.3`, the `minimap2` flag `-f 100000` is added to account for very high prevalence minimizers in reference. Thank you.
 
 Description:
 
