@@ -29,7 +29,7 @@
 
 (you should now be able to call `iav_serotype` from the command line to bring up the help menu)
 
-5) Download and unpack database files from Zenodo (~1.7 GB total). `cd` to the directory you want them to live.
+5) Download and unpack database files (`v1.25`) from Zenodo (~1.7 GB total). `cd` to the directory you want them to live.
 
 `wget https://zenodo.org/records/11509609/files/Influenza_A_segment_sequences.tar.gz`
 
