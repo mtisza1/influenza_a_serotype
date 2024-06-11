@@ -74,7 +74,11 @@ write.table(sum_dt,
 assignp <- sum_dt %>%
   slice_max(top_score, with_ties = F) %>%
   ggplot(aes(x = read_assignment)) +
-  geom_bar()
+  geom_bar() +
+  theme(axis.text.x = 
+          element_text(angle = 90, 
+                       vjust = 0.5, 
+                       hjust=1))
 
 ggsave(assignp,
        file = sprintf("%s/%s_read_serotype_assignment.pdf", 
