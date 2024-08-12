@@ -361,8 +361,8 @@ def iav_serotype():
 
             logger.info(f"> fastp took {timedelta(seconds=time_taken)}")
         else:
-            ready_r1 = decomp_r1
-            ready_r2 = decomp_r2
+            ready_r1 = str(args.READS[0])
+            ready_r2 = str(args.READS[1])
     
         if not os.path.isfile(ready_r1) or os.path.getsize(ready_r1) == 0:
             logger.error(f'before: minimap2, read 1 file empty or does not exist')
