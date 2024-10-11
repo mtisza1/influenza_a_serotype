@@ -63,8 +63,8 @@ def minimap2_sr(reference: str, read1: str, read2: str, paf_file: str, cpus: str
     mini2_command = ['minimap2', '-t', cpus, 
                     '-cx', 'sr', '--secondary=yes', 
                     '-f', '100000',
-                    '-N' '150',
-                    '-p', '0.98',
+                    '-N' '1000',
+                    '-p', '0.95',
                     reference, read1, read2]
 
     # Second command-line
