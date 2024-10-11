@@ -100,8 +100,8 @@ def minimap2_long(reference: str, reads: str, map_set, paf_file: str, cpus: str)
     mini2_command = ['minimap2', '-t', cpus, 
                     '-cx', map_set, '--secondary=yes', 
                     '-f', '100000',
-                    '-N' '150',
-                    '-p', '0.98',
+                    '-N' '1000',
+                    '-p', '0.95',
                     reference, reads]
 
     # Second command-line
