@@ -62,9 +62,9 @@ def minimap2_sr(reference: str, read1: str, read2: str, paf_file: str, cpus: str
     # First command-line
     mini2_command = ['minimap2', '-t', cpus, 
                     '-cx', 'sr', '--secondary=yes', 
-                    '-f', '100000',
+                    '-f', '100000', '--sam-hit-only',
                     '-N' '1000',
-                    '-p', '0.95',
+                    '-p', '0.90',
                     reference, read1, read2]
 
     # Second command-line
@@ -99,9 +99,9 @@ def minimap2_long(reference: str, reads: str, map_set, paf_file: str, cpus: str)
 
     mini2_command = ['minimap2', '-t', cpus, 
                     '-cx', map_set, '--secondary=yes', 
-                    '-f', '100000',
+                    '-f', '100000', '--sam-hit-only',
                     '-N' '1000',
-                    '-p', '0.95',
+                    '-p', '0.90',
                     reference, reads]
 
     # Second command-line
