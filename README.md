@@ -49,7 +49,7 @@ You should now have these 2 files:
 
 # Update (if necessary)
 
-Latest version is `v0.1.4`
+Latest version is `v0.1.5`
 
 
 1) `pip uninstall iav_serotype`
