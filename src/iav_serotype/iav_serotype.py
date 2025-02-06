@@ -57,23 +57,75 @@ def seqkit_stats_long(reads: str, cpus: str, stat_file: str):
 # run minimap with correct settings
 ##should be for paired short reads
 def minimap2_sr(reference: str, read1: str, read2: str, paf_file: str, cpus: str):
+    oppaf = open(paf_file, 'a')
 
-    return Popen(['minimap2', '-t', cpus, 
+    # First command-line
+    mini2_command = ['minimap2', '-t', cpus, 
                     '-cx', 'sr', '--secondary=yes', 
-                    '-f', '100000',
-                    '-o', paf_file,
-                    reference, read1, read2],
-                    stdout=PIPE, stderr=STDOUT)
+                    '-f', '100000', '--sam-hit-only',
+                    '-N' '1000',
+                    '-p', '0.90',
+                    reference, read1, read2]
+
+    # Second command-line
+    awk_command = ['awk', 
+                   '{OFS=FS=\"\\t\"}{if($4-$3>=($2*0.8)){print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12}}'
+                   ]
+
+    # Launch first process
+    mini2_process = subprocess.Popen(
+        mini2_command,
+        stdout=subprocess.PIPE
+        )
+
+    # Launch second process and connect it to the first one
+    awk_process = subprocess.Popen(
+        awk_command, 
+        stdin=mini2_process.stdout, 
+        stdout=oppaf
+    )
+
+    # Let stream flow between them
+    output, _ = awk_process.communicate()
+
+    return output.decode()
+
 
 # run minimap with long read correct settings
 ##should be for long reads
 def minimap2_long(reference: str, reads: str, map_set, paf_file: str, cpus: str):
 
-    return Popen(['minimap2', '-t', cpus, 
+    oppaf = open(paf_file, 'a')
+
+    mini2_command = ['minimap2', '-t', cpus, 
                     '-cx', map_set, '--secondary=yes', 
-                    '-o', paf_file,
-                    reference, reads],
-                    stdout=PIPE, stderr=STDOUT)
+                    '-f', '100000', '--sam-hit-only',
+                    '-N' '1000',
+                    '-p', '0.90',
+                    reference, reads]
+
+    # Second command-line
+    awk_command = ['awk', 
+                   '{OFS=FS=\"\\t\"}{if($4-$3>=($2*0.8)){print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12}}'
+                   ]
+
+    # Launch first process
+    mini2_process = subprocess.Popen(
+        mini2_command,
+        stdout=subprocess.PIPE
+        )
+
+    # Launch second process and connect it to the first one
+    awk_process = subprocess.Popen(
+        awk_command, 
+        stdin=mini2_process.stdout, 
+        stdout=oppaf
+    )
+
+    # Let stream flow between them
+    output, _ = awk_process.communicate()
+
+    return output.decode()
 
 # grep reads of each serotype
 def grep_reads(rname_file: str, reads: str, sero_reads: str, cpus: str):
