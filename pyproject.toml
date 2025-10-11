@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "iav_serotype"
-version = "0.1.5"
+version = "0.2.0"
 authors = [
   { name="Mike Tisza", email="michael.tisza@gmail.com" },
 ]
@@ -17,7 +17,10 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "numpy",    
+    "numpy",
+    "pysam",
+    "polars",
+    "matplotlib",
 ]
 
 
