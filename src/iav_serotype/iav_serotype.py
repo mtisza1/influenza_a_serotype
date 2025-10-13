@@ -114,7 +114,7 @@ def iav_serotype():
                                 DB path is assumed to be ' + iavs_script_path.replace("src/iav_serotype", "DBs/v1.0"))
 
     optional_args.add_argument("--thresh", 
-                            dest="THRESH", type=float, default=0.9,
+                            dest="THRESH", type=float, default=90,
                             help=f'Default = 0.9 -- minimum read score for serotype assignment (ANI*AF). \
                                 Maximum possible score = 1')
     #MM_SET

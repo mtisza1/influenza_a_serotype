@@ -113,7 +113,7 @@ def pair_alns(alndf: pl.DataFrame) -> pl.DataFrame:
     return mini2_p_df
 
 
-def compute_assignment(df_align: pl.DataFrame, flu_info: pl.DataFrame, score_thresh: float = 135) -> pl.DataFrame:
+def compute_assignment(df_align: pl.DataFrame, flu_info: pl.DataFrame, score_thresh: float = 90) -> pl.DataFrame:
     if df_align.is_empty():
         return df_align
 
@@ -211,7 +211,7 @@ def write_outputs(sum_df: pl.DataFrame, sample: str, out_dir: str) -> Dict[str, 
     return outputs
 
 
-def assign_serotypes(bam_path: str, db_info_path: str, sample: str, out_dir: str, score_thresh: float = 135) -> Dict[str, str]:
+def assign_serotypes(bam_path: str, db_info_path: str, sample: str, out_dir: str, score_thresh: float = 90) -> Dict[str, str]:
     #running pairs_alns on the output of bam_to_score
     score_df = bam_to_score(bam_path)
     df_align = pair_alns(

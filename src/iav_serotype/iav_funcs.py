@@ -81,6 +81,11 @@ def minimap2_sr(reference: str, read1: str, read2: str, file_stem: str, cpus: st
     # Sort the BAM
     pysam.sort('-@', str(cpus), '-o', sorted_bam, filtered_bam)
 
+    if os.path.isfile(sam_file):
+        os.remove(sam_file)
+    if os.path.isfile(filtered_bam):
+        os.remove(filtered_bam)
+
     return sorted_bam
 
 
