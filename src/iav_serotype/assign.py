@@ -72,7 +72,12 @@ def bam_to_score(in_bam: str) -> pl.DataFrame:
     return filter_df
 
 def load_flu_info(db_info_path: str) -> pl.DataFrame:
-    df = pl.read_csv(db_info_path, separator='\t', has_header=True)
+    df = pl.read_csv(
+        db_info_path, 
+        separator='\t', 
+        has_header=True,
+        schema_overrides={"accession": pl.Utf8, "serotype": pl.Utf8, "segment": pl.Utf8}
+        )
     # Ensure required columns
     needed = {"accession", "serotype", "segment"}
     missing = needed - set(df.columns)
@@ -88,10 +93,10 @@ def pair_alns(alndf: pl.DataFrame) -> pl.DataFrame:
     mini2_p_df = alndf.with_columns(
         (pl.col("aln_acc") * pl.col("aln_prop")).alias("aln_score")
     ).sort(
-        ['qname', 'orientation', 'aln_score'], 
+        ['qname', 'aln_score'], 
         descending = True
     ).group_by(
-        ['qname', 'pair_name', 'orientation', 'rname']
+        ['qname', 'pair_name', 'rname']
     ).agg(
         pl.col('read_length').first().alias('read_length'),
         pl.col('aln_prop').first().alias('aln_prop'),
@@ -103,12 +108,12 @@ def pair_alns(alndf: pl.DataFrame) -> pl.DataFrame:
     ).agg(
         pl.col('read_length').sum().alias('pair_length'),
         pl.col('read_length').count().alias('pair_count'),
-        (pl.col("aln_acc").mean() * pl.col('aln_prop').mean()).alias('pair_score'),  
+        (pl.col("aln_acc").mean() * pl.col('aln_prop').mean() * pl.col('read_length').sum()).alias('pair_score'),  
     )
     return mini2_p_df
 
 
-def compute_assignment(df_align: pl.DataFrame, flu_info: pl.DataFrame, score_thresh: float = 0.9) -> pl.DataFrame:
+def compute_assignment(df_align: pl.DataFrame, flu_info: pl.DataFrame, score_thresh: float = 135) -> pl.DataFrame:
     if df_align.is_empty():
         return df_align
 
@@ -118,23 +123,27 @@ def compute_assignment(df_align: pl.DataFrame, flu_info: pl.DataFrame, score_thr
         listed_clf_df = merged.sort(
             ['pair_name', 'pair_score', 'pair_length', 'serotype'], 
             descending = True
-        ).group_by(['pair_name', 'pair_length', 'pair_count', 'serotype']).agg(
+        ).group_by(['pair_name', 'serotype']).agg(
             pl.col('pair_score').first().alias('sero_score'),
+            pl.col('pair_length').first().alias('sero_al_length'),
+            pl.col('pair_count').first().alias('sero_read_count')
         ).sort(
             ['pair_name', 'sero_score'], 
             descending = True
-        ).group_by(['pair_name', 'pair_length']).agg(
+        ).group_by(['pair_name']).agg(
             pl.col('sero_score').first().alias('first_score'),
             pl.col('sero_score').slice(1,1).first().alias('second_score'),
             pl.col('serotype').first().alias('first_sero'),
             pl.col('serotype').slice(1,1).first().alias('second_sero'),
-            pl.col('pair_count').first().alias('first_nreads'),
-            pl.col('pair_count').slice(1,1).first().alias('second_nreads'),
+            pl.col('sero_read_count').first().alias('first_nreads'),
+            pl.col('sero_read_count').slice(1,1).first().alias('second_nreads'),
+            pl.col('sero_al_length').first().alias('first_alength'),
+            pl.col('sero_al_length').slice(1,1).first().alias('second_alength'),
         ).with_columns([
             # decision logic: best serotype has to be better than any other serotype
             pl.when(
                 (
-                    (pl.col("first_score") - 0.003 >= pl.col("second_score")) | \
+                    (pl.col("first_score") - 1 >= pl.col("second_score")) | \
                     pl.col("second_score").is_null() | \
                     (pl.col('first_sero') == pl.col('second_sero'))
                 )
@@ -172,6 +181,7 @@ def write_outputs(sum_df: pl.DataFrame, sample: str, out_dir: str) -> Dict[str, 
     plt.figure(figsize=(8, 4))
     plt.bar(labels, values, color="#4C78A8")
     plt.xticks(rotation=90)
+    plt.ylabel("read count")
     plt.tight_layout()
     plot_path = os.path.join(out_dir, f"{sample}_read_serotype_assignment.pdf")
     plt.savefig(plot_path)
@@ -201,15 +211,21 @@ def write_outputs(sum_df: pl.DataFrame, sample: str, out_dir: str) -> Dict[str, 
     return outputs
 
 
-def assign_serotypes(bam_path: str, db_info_path: str, sample: str, out_dir: str, score_thresh: float = 0.9) -> Dict[str, str]:
+def assign_serotypes(bam_path: str, db_info_path: str, sample: str, out_dir: str, score_thresh: float = 135) -> Dict[str, str]:
     #running pairs_alns on the output of bam_to_score
+    score_df = bam_to_score(bam_path)
     df_align = pair_alns(
-        bam_to_score(bam_path)
+        score_df
     )
     if df_align.is_empty():
         logger.info("No alignments found; skipping assignment outputs.")
         return {}
 
+    score_path = os.path.join(out_dir, f"{sample}_scores_summary.tsv")
+    score_df.write_csv(score_path, separator='\t', include_header=True)
+
+    pair_path = os.path.join(out_dir, f"{sample}_pairs_summary.tsv")
+    df_align.write_csv(pair_path, separator='\t', include_header=True)
     flu_info = load_flu_info(db_info_path)
     sum_df = compute_assignment(df_align, flu_info, score_thresh)
 

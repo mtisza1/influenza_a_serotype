@@ -72,18 +72,11 @@ def minimap2_sr(reference: str, read1: str, read2: str, file_stem: str, cpus: st
         if mini2_process.returncode != 0:
             raise RuntimeError(f"minimap2 failed with code {mini2_process.returncode}: {stderr.decode().strip()}")
 
-    # Filter by alignment fraction >= 0.8 and write BAM
+    # write BAM
     with pysam.AlignmentFile(sam_file, "r") as in_sam, \
          pysam.AlignmentFile(filtered_bam, "wb", template=in_sam) as out_bam:
         for aln in in_sam:
-            if aln.is_unmapped:
-                continue
-            qlen = aln.query_length or 0
-            if qlen <= 0:
-                continue
-            af = (aln.query_alignment_length or 0) / float(qlen)
-            if af >= 0.8:
-                out_bam.write(aln)
+            out_bam.write(aln)
 
     # Sort the BAM
     pysam.sort('-@', str(cpus), '-o', sorted_bam, filtered_bam)
@@ -119,18 +112,11 @@ def minimap2_long(reference: str, reads: str, map_set, file_stem: str, cpus: str
         if mini2_process.returncode != 0:
             raise RuntimeError(f"minimap2 failed with code {mini2_process.returncode}: {stderr.decode().strip()}")
 
-    # Filter by alignment fraction >= 0.8 and write BAM
+    # write BAM
     with pysam.AlignmentFile(sam_file, "r") as in_sam, \
          pysam.AlignmentFile(filtered_bam, "wb", template=in_sam) as out_bam:
         for aln in in_sam:
-            if aln.is_unmapped:
-                continue
-            qlen = aln.query_length or 0
-            if qlen <= 0:
-                continue
-            af = (aln.query_alignment_length or 0) / float(qlen)
-            if af >= 0.8:
-                out_bam.write(aln)
+            out_bam.write(aln)
 
     # Sort the BAM
     pysam.sort('-@', str(cpus), '-o', sorted_bam, filtered_bam)
