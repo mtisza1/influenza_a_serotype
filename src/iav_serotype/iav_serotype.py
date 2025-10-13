@@ -213,50 +213,6 @@ def iav_serotype():
             if not os.path.isfile(str(readf)) or os.path.getsize(str(readf)) == 0:
                 logger.error(f'before: fastq processing, read file {readf} is empty or does not exist')
     
-    bz2 = False
-    ### not developing this option right now.
-    #for read in args.READS:
-    #    if read.endswith('bz2'):
-    #        bz2 = True
-    
-    if bz2 == True:
-        lbzcat_starttime = time.perf_counter()
-
-        logger.info(f'running lbzcat to uncompress reads')
-
-        decomp_r1 = f'{iavs_temp}/{str(args.SAMPLE)}_R1.fastq'
-        decomp_r2 = f'{iavs_temp}/{str(args.SAMPLE)}_R2.fastq'
-
-        try:
-
-            unbz2run1 = unbz2_file(str(args.READS[0]), 
-                                   decomp_r1, str(args.CPU))
-
-            with unbz2run1.stdout:
-                log_subprocess_output(unbz2run1.stdout)
-            exitcode = unbz2run1.wait()
-        except Exception as e:
-            logger.error(e)
-            sys.exit
-
-        try:
-
-            unbz2run2 = unbz2_file(str(args.READS[1]), 
-                                   decomp_r2, str(args.CPU))
-
-            with unbz2run2.stdout:
-                log_subprocess_output(unbz2run2.stdout)
-            exitcode = unbz2run2.wait()
-        except Exception as e:
-            logger.error(e)
-            sys.exit
-
-
-        lbzcat_endtime = time.perf_counter()
-
-        time_taken = lbzcat_endtime - lbzcat_starttime
-
-        logger.info(f"> lbzcat took {timedelta(seconds=time_taken)}")
 
     stat_file = f'{samp_out_dir}/{str(args.SAMPLE)}_read_stats.tsv'
     aln_stem = f'{samp_out_dir}/{str(args.SAMPLE)}_influenza_A'
