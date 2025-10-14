@@ -2,7 +2,7 @@ import subprocess
 from subprocess import Popen, PIPE, STDOUT
 import os
 import pysam
-
+import shutil
 
 # uncompress .bz2 fastqs
 def unbz2_file(bzread1: str, deread1: str, cpu: str):
@@ -218,5 +218,5 @@ def bam_list_fastq(rname_file: str, sorted_bam: str, out_fastq_r1: str, out_fast
 
 def is_tool(name):
     """Check whether `name` is on PATH."""
-    from distutils.spawn import find_executable
-    return find_executable(name) is not None
+    
+    return shutil.which(name) is not None

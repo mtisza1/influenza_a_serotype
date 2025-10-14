@@ -10,30 +10,20 @@ authors = [
 ]
 description = "Assign Influenza A serotype to short reads."
 readme = "README.md"
-requires-python = ">=3.6"
+requires-python = ">=3.11"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "numpy",
     "pysam",
     "polars",
     "matplotlib",
 ]
 
-
-
 [tool.setuptools.packages.find]
 where = ["src"]
-
-[tool.setuptools.package-data]
-"iav_serotype" = ["*.R", "*.sh", "*.py"]
-
-[tool.setuptools]
-script-files = ["src/iav_serotype/parse_pafs_influenza_A.R"]
-
 
 [project.scripts]  
 iav_serotype = "iav_serotype:iav_serotype"
