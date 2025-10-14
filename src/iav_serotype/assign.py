@@ -30,7 +30,7 @@ def bam_to_score(in_bam: str) -> pl.DataFrame:
             if record.query_name.endswith(endtup):
                 pairn: str = record.query_name[:-2]
             else:
-                pairn: str = record.query_name
+                pairn: str = record.query_name.strip()
 
             # NM flag reports "edit distance" between read and ref
             try:
@@ -93,10 +93,10 @@ def pair_alns(alndf: pl.DataFrame) -> pl.DataFrame:
     mini2_p_df = alndf.with_columns(
         (pl.col("aln_acc") * pl.col("aln_prop")).alias("aln_score")
     ).sort(
-        ['qname', 'aln_score'], 
+        ['qname', 'orientation', 'aln_score'], 
         descending = True
     ).group_by(
-        ['qname', 'pair_name', 'rname']
+        ['qname', 'pair_name', 'orientation', 'rname']
     ).agg(
         pl.col('read_length').first().alias('read_length'),
         pl.col('aln_prop').first().alias('aln_prop'),
@@ -220,7 +220,11 @@ def assign_serotypes(bam_path: str, db_info_path: str, sample: str, out_dir: str
     if df_align.is_empty():
         logger.info("No alignments found; skipping assignment outputs.")
         return {}
+    score_path = os.path.join(out_dir, f"{sample}_scores_summary.tsv")
+    score_df.write_csv(score_path, separator='\t', include_header=True)
 
+    pair_path = os.path.join(out_dir, f"{sample}_pairs_summary.tsv")
+    df_align.write_csv(pair_path, separator='\t', include_header=True)
     flu_info = load_flu_info(db_info_path)
     sum_df = compute_assignment(df_align, flu_info, score_thresh)
 
