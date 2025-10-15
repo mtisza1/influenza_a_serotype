@@ -66,7 +66,7 @@ def iav_serotype():
 
     Def_workdir = os.getcwd()
 
-    parser = argparse.ArgumentParser(description='assign IAV serotype to short reads. \
+    parser = argparse.ArgumentParser(description='assign IAV serotype to sequencing reads. \
                                     Version ' + str(__version__))
 
 
@@ -121,6 +121,10 @@ def iav_serotype():
     optional_args.add_argument("--mm_preset", 
                             dest="MM_SET", type=str, choices=['map-pb', 'map-ont', 'map-hifi', 'lr:hq'], default='lr:hq',
                             help=f'Default = lr:hq -- minimap2 alignemnt preset (for long read data only)')
+    optional_args.add_argument("--get-reads", 
+                            dest="GET_READS", type=str2bool, default=True,
+                            help=f'Default = True -- generate sero-type read files for all assignments. \
+                                This may take a while for high influenza content libraries.')
     args = parser.parse_args()
 
     ## make directories
@@ -385,7 +389,7 @@ def iav_serotype():
             if os.path.isfile(f) and os.path.getsize(f) > 0:
                 assigned_read_list.append(f)
     
-    if assigned_read_list:
+    if assigned_read_list and args.GET_READS:
         grep_starttime = time.perf_counter()
 
         logger.info('getting reads for each serotype assignment')

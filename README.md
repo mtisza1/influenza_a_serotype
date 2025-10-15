@@ -46,7 +46,7 @@ You should now have these 2 files:
 
 `DBs/v1.25/Influenza_A_segment_sequences.fna`
 
-**Lite database (`lite1.1`, 2.5 MB total)**
+**Lite database (`lite1.1`, 4.3 MB total)**
 
 NOTE: This database is a dramatically reduced database with representatives from most of the influenza A serotypes plus influenza B, C, and D. This allows searching with a fraction of the compute time and memory footprint at the slight expense of accuracy.
 
