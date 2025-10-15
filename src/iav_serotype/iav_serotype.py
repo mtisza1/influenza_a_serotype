@@ -11,138 +11,34 @@ import random
 import string
 import re
 import logging
-from distutils.spawn import find_executable
-
-####### ####### this tool's functions ####### ####### 
-####### ####### ##################### ####### ####### 
-
-# uncompress .bz2 fastqs
-def unbz2_file(bzread1:str, deread1: str, cpu: str):
-
-    return Popen(['lbzcat', '-n', cpu, '-c', bzread1],
-                    stdout=open(deread1, "w"), stderr=STDOUT)
-
-
-# fastp paired-end
-def fastp_paired(read1:str, read2: str, fastp_read1: str, 
-                 fastp_read2: str, cpus: str,
-                 htmlo: str, jsono: str):
-
-    icpus = int(cpus)
-    if icpus > 16:
-        cpus = str(16)
-    
-    return Popen(['fastp', '-w', cpus, 
-                    '-i', read1, '-I', read2, 
-                    '-o', fastp_read1, '-O', fastp_read2,
-                    '-h', htmlo, '-j', jsono],
-                    stdout=PIPE, stderr=STDOUT)
-    
-# seqkit stats paired short reads
-def seqkit_stats_paired(read1:str, read2: str, cpus: str, stat_file: str):
-
-    return Popen(['seqkit', 'stats', '-j', cpus, '-T',
-                    '-o', stat_file,
-                    read1, read2],
-                    stdout=PIPE, stderr=STDOUT)
-
-# seqkit stats all
-def seqkit_stats_long(reads: str, cpus: str, stat_file: str):
-
-    return Popen(['seqkit', 'stats', '-j', cpus, '-T',
-                    '-o', stat_file,
-                    reads],
-                    stdout=PIPE, stderr=STDOUT)
-
-# run minimap with correct settings
-##should be for paired short reads
-def minimap2_sr(reference: str, read1: str, read2: str, paf_file: str, cpus: str):
-    oppaf = open(paf_file, 'a')
-
-    # First command-line
-    mini2_command = ['minimap2', '-t', cpus, 
-                    '-cx', 'sr', '--secondary=yes', 
-                    '-f', '100000', '--sam-hit-only',
-                    '-N' '1000',
-                    '-p', '0.90',
-                    reference, read1, read2]
-
-    # Second command-line
-    awk_command = ['awk', 
-                   '{OFS=FS=\"\\t\"}{if($4-$3>=($2*0.8)){print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12}}'
-                   ]
-
-    # Launch first process
-    mini2_process = subprocess.Popen(
-        mini2_command,
-        stdout=subprocess.PIPE
-        )
-
-    # Launch second process and connect it to the first one
-    awk_process = subprocess.Popen(
-        awk_command, 
-        stdin=mini2_process.stdout, 
-        stdout=oppaf
+import pysam
+import polars as pl
+try:
+    from .iav_funcs import (
+        unbz2_file,
+        fastp_paired,
+        seqkit_stats_paired,
+        seqkit_stats_long,
+        minimap2_sr,
+        minimap2_long,
+        grep_reads,
+        is_tool,
+        bam_list_fastq
     )
-
-    # Let stream flow between them
-    output, _ = awk_process.communicate()
-
-    return output.decode()
-
-
-# run minimap with long read correct settings
-##should be for long reads
-def minimap2_long(reference: str, reads: str, map_set, paf_file: str, cpus: str):
-
-    oppaf = open(paf_file, 'a')
-
-    mini2_command = ['minimap2', '-t', cpus, 
-                    '-cx', map_set, '--secondary=yes', 
-                    '-f', '100000', '--sam-hit-only',
-                    '-N' '1000',
-                    '-p', '0.90',
-                    reference, reads]
-
-    # Second command-line
-    awk_command = ['awk', 
-                   '{OFS=FS=\"\\t\"}{if($4-$3>=($2*0.8)){print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12}}'
-                   ]
-
-    # Launch first process
-    mini2_process = subprocess.Popen(
-        mini2_command,
-        stdout=subprocess.PIPE
-        )
-
-    # Launch second process and connect it to the first one
-    awk_process = subprocess.Popen(
-        awk_command, 
-        stdin=mini2_process.stdout, 
-        stdout=oppaf
+    from .assign import assign_serotypes
+except:
+    from iav_funcs import (
+        unbz2_file,
+        fastp_paired,
+        seqkit_stats_paired,
+        seqkit_stats_long,
+        minimap2_sr,
+        minimap2_long,
+        grep_reads,
+        is_tool,
+        bam_list_fastq
     )
-
-    # Let stream flow between them
-    output, _ = awk_process.communicate()
-
-    return output.decode()
-
-# grep reads of each serotype
-def grep_reads(rname_file: str, reads: str, sero_reads: str, cpus: str):
-    
-    return Popen(['seqkit', 'grep', '-j', cpus,
-                    '-o', sero_reads,
-                    '-f', rname_file, reads],
-                    stdout=PIPE, stderr=STDOUT)
-
-def is_tool(name):
-    """Check whether `name` is on PATH."""
-    from distutils.spawn import find_executable
-    return find_executable(name) is not None
-
-####### ####### ##################### ####### ####### 
-####### ####### ##################### ####### ####### 
-
+    from assign import assign_serotypes
 
 def str2bool(v):
     if isinstance(v, bool):
@@ -164,13 +60,13 @@ def iav_serotype():
 
     parentpath = Path(pathname).parents[1]
 
-    __version__ = "0.1.5"
+    __version__ = "0.2.0"
 
     Def_CPUs = os.cpu_count()
 
     Def_workdir = os.getcwd()
 
-    parser = argparse.ArgumentParser(description='assign IAV serotype to short reads. \
+    parser = argparse.ArgumentParser(description='assign IAV serotype to sequencing reads. \
                                     Version ' + str(__version__))
 
 
@@ -218,13 +114,17 @@ def iav_serotype():
                                 DB path is assumed to be ' + iavs_script_path.replace("src/iav_serotype", "DBs/v1.0"))
 
     optional_args.add_argument("--thresh", 
-                            dest="THRESH", type=float, default=0.9,
+                            dest="THRESH", type=float, default=90,
                             help=f'Default = 0.9 -- minimum read score for serotype assignment (ANI*AF). \
                                 Maximum possible score = 1')
     #MM_SET
     optional_args.add_argument("--mm_preset", 
                             dest="MM_SET", type=str, choices=['map-pb', 'map-ont', 'map-hifi', 'lr:hq'], default='lr:hq',
                             help=f'Default = lr:hq -- minimap2 alignemnt preset (for long read data only)')
+    optional_args.add_argument("--get-reads", 
+                            dest="GET_READS", type=str2bool, default=True,
+                            help=f'Default = True -- generate sero-type read files for all assignments. \
+                                This may take a while for high influenza content libraries.')
     args = parser.parse_args()
 
     ## make directories
@@ -289,19 +189,6 @@ def iav_serotype():
 
     logger.info(f"read format : {str(args.READ_FMT)}")
 
-
-    completedProc = subprocess.run(['Rscript', str(iavs_script_path) + '/check_R_libraries1.R'])
-
-    #print(completedProc.returncode)
-    if completedProc.returncode != 0 :
-        logger.warning("some required R packages are not found. Required:")
-        logger.warning("dplyr, data.table, stringr, ggplot2")
-        logger.warning("Did you activate the conda environment?")
-        logger.warning("see yml. Exiting")
-        quit()
-
-
-
     tool_dep_list = ['minimap2', 'fastp', 'seqkit'] #lbzcat
     
     for tool in tool_dep_list:
@@ -330,54 +217,9 @@ def iav_serotype():
             if not os.path.isfile(str(readf)) or os.path.getsize(str(readf)) == 0:
                 logger.error(f'before: fastq processing, read file {readf} is empty or does not exist')
     
-    bz2 = False
-    ### not developing this option right now.
-    #for read in args.READS:
-    #    if read.endswith('bz2'):
-    #        bz2 = True
-    
-    if bz2 == True:
-        lbzcat_starttime = time.perf_counter()
-
-        logger.info(f'running lbzcat to uncompress reads')
-
-        decomp_r1 = f'{iavs_temp}/{str(args.SAMPLE)}_R1.fastq'
-        decomp_r2 = f'{iavs_temp}/{str(args.SAMPLE)}_R2.fastq'
-
-        try:
-
-            unbz2run1 = unbz2_file(str(args.READS[0]), 
-                                   decomp_r1, str(args.CPU))
-
-            with unbz2run1.stdout:
-                log_subprocess_output(unbz2run1.stdout)
-            exitcode = unbz2run1.wait()
-        except Exception as e:
-            logger.error(e)
-            sys.exit
-
-        try:
-
-            unbz2run2 = unbz2_file(str(args.READS[1]), 
-                                   decomp_r2, str(args.CPU))
-
-            with unbz2run2.stdout:
-                log_subprocess_output(unbz2run2.stdout)
-            exitcode = unbz2run2.wait()
-        except Exception as e:
-            logger.error(e)
-            sys.exit
-
-
-        lbzcat_endtime = time.perf_counter()
-
-        time_taken = lbzcat_endtime - lbzcat_starttime
-
-        logger.info(f"> lbzcat took {timedelta(seconds=time_taken)}")
 
     stat_file = f'{samp_out_dir}/{str(args.SAMPLE)}_read_stats.tsv'
-
-    paf_file = f'{samp_out_dir}/{str(args.SAMPLE)}_influenza_A.cigar.paf'
+    aln_stem = f'{samp_out_dir}/{str(args.SAMPLE)}_influenza_A'
 
     if str(args.READ_FMT).lower() == "short_paired": #######
         if args.QUAL == True:
@@ -454,12 +296,7 @@ def iav_serotype():
 
         logger.info(f'running minimap2 to align reads to influenza A reference sequences')
         try:
-
-            minimaprun = minimap2_sr(DB_file, ready_r1, ready_r2, paf_file, str(args.CPU))
-
-            with minimaprun.stdout:
-                log_subprocess_output(minimaprun.stdout)
-            exitcode = minimaprun.wait()
+            sorted_bam = minimap2_sr(DB_file, ready_r1, ready_r2, aln_stem, str(args.CPU))
         except Exception as e:
             logger.error(e)
             sys.exit
@@ -469,6 +306,20 @@ def iav_serotype():
         time_taken = mm_endtime - mm_starttime
 
         logger.info(f"> minimap2 took {timedelta(seconds=time_taken)}")
+
+        # Python assignment pipeline (replaces R script)
+        try:
+            assign_outputs = assign_serotypes(
+                sorted_bam,
+                os.path.join(str(args.DB), 'Influenza_A_segment_info1.tsv'),
+                str(args.SAMPLE),
+                samp_out_dir,
+                float(args.THRESH),
+            )
+            logger.info(f"Assignment outputs: {assign_outputs}")
+        except Exception as e:
+            logger.error(f"Assignment step failed: {e}")
+            sys.exit()
 
 
     ### long reads option ###
@@ -504,12 +355,7 @@ def iav_serotype():
 
         logger.info(f'running minimap2 to align reads to influenza A reference sequences')
         try:
-
-            minimaprun = minimap2_long(DB_file, str(READS), str(args.MM_SET), paf_file, str(args.CPU))
-
-            with minimaprun.stdout:
-                log_subprocess_output(minimaprun.stdout)
-            exitcode = minimaprun.wait()
+            sorted_bam = minimap2_long(DB_file, str(READS), str(args.MM_SET), aln_stem, str(args.CPU))
         except Exception as e:
             logger.error(e)
             sys.exit
@@ -520,23 +366,19 @@ def iav_serotype():
 
         logger.info(f"> minimap2 took {timedelta(seconds=time_taken)}")
 
-
-
-
-    ### run the R script for parsing and assignment ###
-    Rprocess = Popen(['Rscript', 
-                     str(f'{iavs_script_path}/parse_pafs_influenza_A.R'), 
-                     str(f'{args.DB}/Influenza_A_segment_info1.tsv'), 
-                     str(paf_file), 
-                     str(args.SAMPLE), 
-                     samp_out_dir,
-                     str(args.THRESH)],
-                    stdout=PIPE, stderr=STDOUT)
-
-    with Rprocess.stdout:
-        log_subprocess_output(Rprocess.stdout)
-    exitcode = Rprocess.wait()
-
+        # Python assignment pipeline (replaces R script)
+        try:
+            assign_outputs = assign_serotypes(
+                sorted_bam,
+                os.path.join(str(args.DB), 'Influenza_A_segment_info1.tsv'),
+                str(args.SAMPLE),
+                samp_out_dir,
+                float(args.THRESH),
+            )
+            logger.info(f"Assignment outputs: {assign_outputs}")
+        except Exception as e:
+            logger.error(f"Assignment step failed: {e}")
+            sys.exit()
 
     # retrieve reads by serotype
 
@@ -544,11 +386,10 @@ def iav_serotype():
     for readlist in os.listdir(samp_out_dir):
         if readlist.endswith('.txt'):
             f = os.path.join(samp_out_dir, readlist)
-
             if os.path.isfile(f) and os.path.getsize(f) > 0:
                 assigned_read_list.append(f)
     
-    if assigned_read_list:
+    if assigned_read_list and args.GET_READS:
         grep_starttime = time.perf_counter()
 
         logger.info('getting reads for each serotype assignment')
@@ -597,8 +438,10 @@ def iav_serotype():
         time_taken = grep_endtime - grep_starttime
 
         logger.info(f"> seqkit grep of serotyped reads took {timedelta(seconds=time_taken)}")
+    elif not assigned_read_list:
+        logger.info(f'no reads assigned to influenza')
     else:
-        logger.info(f'no reads assigned to influenza A')
+        logger.info(f'not returning reads.')
 
     if not args.KEEP == True:
         if len(iavs_temp) > 0:

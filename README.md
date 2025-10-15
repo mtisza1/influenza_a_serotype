@@ -1,5 +1,5 @@
 # influenza_a_serotype
- Assign reads from a short- or long-read sequencing library to influenza A serotypes with `iav_serotype` command line tool.
+ Assign reads from a short- or long-read sequencing library to influenza A serotypes, plus Influenza B/C/D, with `iav_serotype` command line tool.
 
 
  The basic premise is to competitively align reads to an up-to-date database of influenza A sequences tagged with information about segment and serotype. Then, determined if a read (pair) aligns better to a particular serotype.
@@ -8,6 +8,7 @@
 
 `Output`: 1. files of serotype-specific reads. 2. Read summary table. 3. Plot of serotype distribution in sample
  
+**NOTE: As of `v0.2.0` and later, the codebase is completely rewritten to avoid R dependencies and limitations. The scoring is slightly different to account for total alignment length of paired reads. This effects the final results. If you are updating from an earlier version, I recommend a clean installaiton.**
 
 # Installation
 
@@ -29,12 +30,15 @@
 
 (you should now be able to call `iav_serotype` from the command line to bring up the help menu)
 
-5) Download and unpack database files (`v1.25`) from Zenodo (~1.7 GB total). `cd` to the directory you want them to live.
+5) Download and unpack database files. Choose from full database or lite databases. `cd` to the directory you want them to live.
+
+**Full database (`v1.25`, ~1.7 GB total)**
+
+NOTE: this database has all available full-length influenza A genome segments. It does not contain influenza B, C, or D genomes.
 
 `wget https://zenodo.org/records/11509609/files/Influenza_A_segment_sequences.tar.gz`
 
 `tar -xvf Influenza_A_segment_sequences.tar.gz`
-
 
 You should now have these 2 files:
 
@@ -42,25 +46,28 @@ You should now have these 2 files:
 
 `DBs/v1.25/Influenza_A_segment_sequences.fna`
 
+**Lite database (`lite1.1`, 4.3 MB total)**
+
+NOTE: This database is a dramatically reduced database with representatives from most of the influenza A serotypes plus influenza B, C, and D. This allows searching with a fraction of the compute time and memory footprint at the slight expense of accuracy.
+
+`wget https://zenodo.org/records/17354032/files/Influenza_Lite_DB.tar.gz`
+
+`tar -xvf Influenza_Lite_DB.tar.gz`
+
+You should now have these 2 files:
+
+`liteDB_v1.1/Influenza_A_segment_info1.tsv`
+
+`liteDB_v1.1/Influenza_A_segment_sequences.fna`
+
+
 6) (optional) set database as conda environmental variable
 
 `conda env config vars set IAVS_DB=/path/to/DBs/v1.25`
 
+or 
 
-# Update (if necessary)
-
-Latest version is `v0.1.5`
-
-
-1) `pip uninstall iav_serotype`
-
-2) `cd influenza_a_serotype`
-
-3) `git pull`
-
-4) `pip install .`
-
-5) `iav_serotype --version`
+`conda env config vars set IAVS_DB=/path/to/liteDB_v1.1`
 
 
 # Run `iav_serotype`
@@ -77,7 +84,22 @@ long reads:
 
 `iav_serotype -r long_reads/virome1.fastq long_reads/virome2.fastq long_reads/virome3.fastq -s my_lr_virome_iav -o iav_project --db /path/to/DBs/v1.25`
 
+# Standard Outputs
+
+ - {sample}_per_serotype_summary.tsv     **<- Main summary table for serotype counts**
+ - {sample}_influenza_A.sorted.bam       **<- filtered, sorted alignment file**
+ - {sample}_per_read_summary.tsv         **<- per-read summary file**
+ - {sample}_read_serotype_assignment.pdf **<- plot of serotype counts**
+ - {sample}_{serotype}.txt               **<- serotype-specific read IDs**
+ - {sample}_{serotype}.R1.fastq          **<- serotype-specific reads (optional)**
+ - {sample}_{serotype}.R2.fastq          **<- serotype-specific reads (optional)**
+ - {sample}_read_stats.tsv               **<- input read stats table**
+
 # Database notes
+
+## lite1.1
+
+Clustered representative sequences from most influenza A serotypes, plus sequences from influenza B, C, and D.
 
 ## v1.25
 
