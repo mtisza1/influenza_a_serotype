@@ -438,8 +438,10 @@ def iav_serotype():
         time_taken = grep_endtime - grep_starttime
 
         logger.info(f"> seqkit grep of serotyped reads took {timedelta(seconds=time_taken)}")
+    elif not assigned_read_list:
+        logger.info(f'no reads assigned to influenza')
     else:
-        logger.info(f'no reads assigned to influenza A')
+        logger.info(f'not returning reads.')
 
     if not args.KEEP == True:
         if len(iavs_temp) > 0:

@@ -84,6 +84,17 @@ long reads:
 
 `iav_serotype -r long_reads/virome1.fastq long_reads/virome2.fastq long_reads/virome3.fastq -s my_lr_virome_iav -o iav_project --db /path/to/DBs/v1.25`
 
+# Standard Outputs
+
+ - {sample}_per_serotype_summary.tsv     **<- Main summary table for serotype counts**
+ - {sample}_influenza_A.sorted.bam       **<- filtered, sorted alignment file**
+ - {sample}_per_read_summary.tsv         **<- per-read summary file**
+ - {sample}_read_serotype_assignment.pdf **<- plot of serotype counts**
+ - {sample}_{serotype}.txt               **<- serotype-specific read IDs**
+ - {sample}_{serotype}.R1.fastq          **<- serotype-specific reads (optional)**
+ - {sample}_{serotype}.R2.fastq          **<- serotype-specific reads (optional)**
+ - {sample}_read_stats.tsv               **<- input read stats table**
+
 # Database notes
 
 ## lite1.1
