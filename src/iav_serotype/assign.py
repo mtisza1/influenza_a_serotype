@@ -220,11 +220,7 @@ def assign_serotypes(bam_path: str, db_info_path: str, sample: str, out_dir: str
     if df_align.is_empty():
         logger.info("No alignments found; skipping assignment outputs.")
         return {}
-    score_path = os.path.join(out_dir, f"{sample}_scores_summary.tsv")
-    score_df.write_csv(score_path, separator='\t', include_header=True)
 
-    pair_path = os.path.join(out_dir, f"{sample}_pairs_summary.tsv")
-    df_align.write_csv(pair_path, separator='\t', include_header=True)
     flu_info = load_flu_info(db_info_path)
     sum_df = compute_assignment(df_align, flu_info, score_thresh)
 

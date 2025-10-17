@@ -60,7 +60,7 @@ def iav_serotype():
 
     parentpath = Path(pathname).parents[1]
 
-    __version__ = "0.2.0"
+    __version__ = "0.2.1"
 
     Def_CPUs = os.cpu_count()
 
